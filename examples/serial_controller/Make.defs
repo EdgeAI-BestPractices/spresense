@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_SERIAL_CONTROLLER),)
+CONFIGURED_APPS += serial_controller
+endif

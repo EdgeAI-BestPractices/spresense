@@ -1,0 +1,26 @@
+
+config EXAMPLES_SERIAL_CONTROLLER
+	tristate "Communicate between Pro-T and Spresense using JSON"
+	default y
+  depends on NETUTILS_CJSON && SYSTEM_POPEN
+	---help---
+		Enable the serial_controller app
+
+if EXAMPLES_SERIAL_CONTROLLER
+
+config EXAMPLES_SERIAL_CONTROLLER_PROGNAME
+	string "Program name"
+	default "serial_controller"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_SERIAL_CONTROLLER_PRIORITY
+	int "serial_controller task priority"
+	default 100
+
+config EXAMPLES_SERIAL_CONTROLLER_STACKSIZE
+	int "serial_controller stack size"
+	default 2048
+
+endif
