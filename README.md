@@ -6,7 +6,27 @@
 Clone this repository and update submodules.
 
 ```
-$ git clone --recursive https://github.com/sonydevworld/spresense.git
+$ git clone --recursive git://github.com:EdgeAI-BestPractices/spresense.git
+```
+
+# Update bootloader
+
+Correct bootloader is required for using Spresense board properly.
+
+```
+cd spresense/sdk
+tools/flash.sh -e <<Downloaded zip file>>
+tools/flash.sh -l ../firmware/spresense -c /dev/ttyUSB0
+```
+
+# kernel settings
+
+Please apply the defconfig that I have already prepared.
+
+```
+cd spresense/sdk
+tools/config.py defconfig
+make
 ```
 
 # Submodules
