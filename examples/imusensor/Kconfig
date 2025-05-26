@@ -1,0 +1,26 @@
+
+config EXAMPLES_IMUSENSOR
+	tristate "Obtain linear and gyro acceleration from IMU Board"
+	default n
+    depends on SENSORS_CXD5602PWBIMU
+	---help---
+		Enable the imusensor app
+
+if EXAMPLES_IMUSENSOR
+
+config EXAMPLES_IMUSENSOR_PROGNAME
+	string "Program name"
+	default "imusensor"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_IMUSENSOR_PRIORITY
+	int "imusensor task priority"
+	default 100
+
+config EXAMPLES_IMUSENSOR_STACKSIZE
+	int "imusensor stack size"
+	default 2048
+
+endif

@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_IMUSENSOR),)
+CONFIGURED_APPS += imusensor
+endif
