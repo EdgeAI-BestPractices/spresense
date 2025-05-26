@@ -29,6 +29,17 @@ tools/config.py defconfig
 make
 ```
 
+# init script
+
+Please flash init.rc using following commands
+It will be written to the main board as a startup script.
+
+```
+cd spresense/sdk
+tools/flash.sh -w init.rc
+tools/flash.sh -c /dev/ttyUSB0 nuttx.spk
+```
+
 # Submodules
 
 ```
