@@ -112,9 +112,6 @@ void *spresense_worker_thread(void *arg) {
 
     char *output = NULL;
     int status = execute_command(msg->cmd, &output);
-    /* int status = 0; */
-    /* char *output = strdup("{\"status\":{\"code\": 1, \"msg\": \"test code\" }, \"data\":{\"x\":1, \"y\":2, \"z\": 3}, \"config\":{\"c\":\"1\", \"d\":2} }"); */
-    usleep(10000000);
 
     if (output == NULL) {
       printf("spresense_worker_thread: Failed to allocate memory for output\n");
@@ -752,7 +749,7 @@ int main(int argc, FAR char *argv[])
         continue;
       }
       printf("main: Failed to read from serial port: %s (%d)\n", strerror(errno), errno);
-      usleep(100000);
+      usleep(10000);
       continue;
     } else if (bytes_read > 0) {
 
