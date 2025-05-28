@@ -47,7 +47,7 @@ static int start_sensing(int fd, int rate, int adrange, int gdrange, int nfifos)
 
   ret = ioctl(fd, SNIOC_SSAMPRATE, rate);
   if (ret) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to set sampling rate\"}}\n", ret);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to set sampling rate\"}}\n", ret);
     return ret;
   }
 
@@ -63,7 +63,7 @@ static int start_sensing(int fd, int rate, int adrange, int gdrange, int nfifos)
   range.gyro = gdrange;
   ret = ioctl(fd, SNIOC_SDRANGE, (unsigned long)(uintptr_t)&range);
   if (ret) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to set dynamic range\"}}\n", ret);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to set dynamic range\"}}\n", ret);
     return ret;
   }
 
@@ -75,7 +75,7 @@ static int start_sensing(int fd, int rate, int adrange, int gdrange, int nfifos)
 
   ret = ioctl(fd, SNIOC_SFIFOTHRESH, nfifos);
   if (ret) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to set FIFO threshold\"}}\n", ret);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to set FIFO threshold\"}}\n", ret);
     return ret;
   }
 
@@ -85,7 +85,7 @@ static int start_sensing(int fd, int rate, int adrange, int gdrange, int nfifos)
 
   ret = ioctl(fd, SNIOC_ENABLE, 1);
   if (ret) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to enable sensor\"}}\n", ret);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to enable sensor\"}}\n", ret);
     return ret;
   }
 
@@ -144,7 +144,7 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
   // Open sensor device
   fd_sensor = open(IMU_BOARD_PATH, O_RDONLY);
   if (fd_sensor < 0) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to open sensor device\"}}\n", -errno);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to open sensor device\"}}\n", -errno);
     exit(1);
   }
 
@@ -167,7 +167,7 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
   // Open TTY device for output
   fd_tty = open(TTY_OUTPUT_PATH, O_WRONLY);
   if (fd_tty < 0) {
-    printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to open TTY device\"}}\n", -errno);
+    printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to open TTY device\"}}\n", -errno);
     ioctl(fd_sensor, SNIOC_ENABLE, 0);
     close(fd_sensor);
     exit(1);
@@ -181,7 +181,7 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
   // Send initial response to indicate polling has started
   char init_msg[256];
   snprintf(init_msg, sizeof(init_msg),
-         "{\"cmd\":\"imusensor\", \"type\":\"res\", \"status\":{\"code\":0, \"msg\":\"Polling started\"}, \"id\":%d}\n",
+         "{\"cmd\":\"imusensor\",\"type\":\"res\",\"status\":{\"code\":0,\"msg\":\"Polling started\"},\"id\":%d}\n",
          request_id);
   write(fd_tty, init_msg, strlen(init_msg));
   while (g_imu_running) {
@@ -200,8 +200,8 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
         // Create full JSON output
         char output[1024];
         snprintf(output, sizeof(output),
-                 "{\"cmd\":\"imusensor\", \"type\":\"poll\", \"interval\":%d, \"id\":%d, "
-                 "\"status\":{\"code\":0, \"msg\":\"\"}, \"data\":%s, \"config\":%s}\n",
+                 "{\"cmd\":\"imusensor\",\"type\":\"poll\",\"interval\":%d,\"id\":%d,"
+                 "\"status\":{\"code\":0,\"msg\":\"\"},\"data\":%s,\"config\":%s}\n",
                  interval_ms, request_id, data_json, config_json);
 
         // Write directly to ttyACM0
@@ -256,14 +256,14 @@ int main(int argc, FAR char *argv[]) {
           if (samplerate != 15 && samplerate != 30 && samplerate != 60 &&
               samplerate != 120 && samplerate != 240 && samplerate != 480 &&
               samplerate != 960 && samplerate != 1920) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"Invalid sample rate\"}}\n");
+            printf("{\"status\":{\"code\":-1,\"msg\":\"Invalid sample rate\"}}\n");
             return 1;
           }
           break;
         case 'a':
           adrange = atoi(optarg);
           if (adrange != 2 && adrange != 4 && adrange != 8 && adrange != 16) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"Invalid accelerometer range\"}}\n");
+            printf("{\"status\":{\"code\":-1,\"msg\":\"Invalid accelerometer range\"}}\n");
             return 1;
           }
           break;
@@ -271,21 +271,21 @@ int main(int argc, FAR char *argv[]) {
           gdrange = atoi(optarg);
           if (gdrange != 125 && gdrange != 250 && gdrange != 500 &&
               gdrange != 1000 && gdrange != 2000 && gdrange != 4000) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"Invalid gyroscope range\"}}\n");
+            printf("{\"status\":{\"code\":-1,\"msg\":\"Invalid gyroscope range\"}}\n");
             return 1;
           }
           break;
         case 'f':
           nfifos = atoi(optarg);
           if (nfifos < 1 || 4 < nfifos) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"FIFO threshold must be between 1 and 4\"}}\n");
+            printf("{\"status\":{\"code\":-1,\"msg\":\"FIFO threshold must be between 1 and 4\"}}\n");
             return 1;
           }
           break;
         case 't':
           interval_ms = atoi(optarg);
           if (interval_ms < 0) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"Interval must be positive\"}}\n");
+            printf("{\"status\":{\"code\":-1,\"msg\":\"Interval must be positive\"}}\n");
             return 1;
           }
           break;
@@ -306,17 +306,17 @@ int main(int argc, FAR char *argv[]) {
     // Check if polling process is running
     pid_t daemon_pid = load_daemon_pid();
     if (daemon_pid <= 0) {
-      printf("{\"status\":{\"code\":-1, \"msg\":\"Sensor daemon not running\"}}\n");
+      printf("{\"status\":{\"code\":-1,\"msg\":\"Sensor daemon not running\"}}\n");
       return 1;
     }
     if (kill(daemon_pid, SIGTERM) < 0) {
       ret = -errno;
-      printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to stop sensor daemon\"}}\n", ret);
+      printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to stop sensor daemon\"}}\n", ret);
       return 1;
     }
     usleep(100000);
     unlink(SENSOR_PID_FILE);
-    printf("{\"status\":{\"code\":0, \"msg\":\"Sensor polling stopped successfully\"}}\n");
+    printf("{\"status\":{\"code\":0,\"msg\":\"Sensor polling stopped successfully\"}}\n");
     return 0;
   }
   // Handle "start" command
@@ -332,7 +332,7 @@ int main(int argc, FAR char *argv[]) {
     if (pid < 0) {
       // // Fork failed
       ret = -errno;
-      printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to create daemon process\"}}\n", ret);
+      printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to create daemon process\"}}\n", ret);
       return 1;
     }
     else if (pid == 0) {
@@ -354,7 +354,7 @@ int main(int argc, FAR char *argv[]) {
     else {
       // Save daemon PID
       save_daemon_pid(pid);
-      printf("{\"status\":{\"code\":0, \"msg\":\"Sensor polling started successfully\"}}\n");
+      printf("{\"status\":{\"code\":0,\"msg\":\"Sensor polling started successfully\"}}\n");
       return 0;
     }
   }
@@ -363,12 +363,12 @@ int main(int argc, FAR char *argv[]) {
     fd = open(IMU_BOARD_PATH, O_RDONLY);
     if (fd < 0) {
       ret = -errno;
-      printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to open device\"}}\n", ret);
+      printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to open device\"}}\n", ret);
       return 1;
     }
     ret = ioctl(fd, SNIOC_ENABLE, 1);
     if (ret < 0) {
-      printf("{\"status\":{\"code\":%d, \"msg\":\"Failed to enable sensor\"}}\n", -errno);
+      printf("{\"status\":{\"code\":%d,\"msg\":\"Failed to enable sensor\"}}\n", -errno);
       close(fd);
       return 1;
     }
@@ -379,9 +379,9 @@ int main(int argc, FAR char *argv[]) {
     ret = poll(fds, 1, 1000);
     if (ret <= 0) {
       if (ret == 0) {
-        printf("{\"status\":{\"code\":-1, \"msg\":\"Timeout waiting for sensor data\"}}\n");
+        printf("{\"status\":{\"code\":-1,\"msg\":\"Timeout waiting for sensor data\"}}\n");
       } else {
-        printf("{\"status\":{\"code\":%d, \"msg\":\"Poll failed\"}}\n", -errno);
+        printf("{\"status\":{\"code\":%d,\"msg\":\"Poll failed\"}}\n", -errno);
       }
       ioctl(fd, SNIOC_ENABLE, 0);
       close(fd);
@@ -390,7 +390,7 @@ int main(int argc, FAR char *argv[]) {
     if (fds[0].revents & POLLIN) {
       ret = read(fd, &data, sizeof(data));
       if (ret != sizeof(data)) {
-        printf("{\"status\":{\"code\":-1, \"msg\":\"Failed to read data\"}}\n");
+        printf("{\"status\":{\"code\":-1,\"msg\":\"Failed to read data\"}}\n");
         ioctl(fd, SNIOC_ENABLE, 0);
         close(fd);
         return 1;
@@ -406,7 +406,7 @@ int main(int argc, FAR char *argv[]) {
                "{\"samplerate\":%d,\"accel_range\":%d,\"gyro_range\":%d,\"fifo\":%d}",
                samplerate, adrange, gdrange, nfifos);
 
-      printf("{\"data\":\"%s\", \"status\":{\"code\":0, \"msg\":\"Sensor data read successfully\"}, \"config\":%s}\n",
+      printf("{\"data\":%s,\"status\":{\"code\":0,\"msg\":\"Sensor data read successfully\"},\"config\":%s}\n",
              data_json, config_json);
     }
     ioctl(fd, SNIOC_ENABLE, 0);
