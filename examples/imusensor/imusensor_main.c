@@ -29,7 +29,7 @@ static void show_usage(const char *progname) {
   printf("  -r RATE   Specify sample rate (Hz) (15, 30, 60, 120, 240, 480, 960, 1920)\n");
   printf("  -a RANGE  Specify accelerometer dynamic range (2, 4, 8, 16)\n");
   printf("  -g RANGE  Specify gyroscope dynamic range (125, 250, 500, 1000, 2000, 4000)\n");
-  printf("  -f FIFO   Specify FIFO threshold\n");
+  printf("  -f FIFO   Specify FIFO threshold (1, 2, 3, 4)\n");
   printf("  -t MS     Specify polling interval in milliseconds (for poll mode)\n");
   printf("  -i ID     Specify request ID (for poll mode)\n");
   printf("  -h        Show this help message\n");
@@ -277,8 +277,8 @@ int main(int argc, FAR char *argv[]) {
           break;
         case 'f':
           nfifos = atoi(optarg);
-          if (nfifos < 1) {
-            printf("{\"status\":{\"code\":-1, \"msg\":\"FIFO threshold must be at least 1\"}}\n");
+          if (nfifos < 1 || 4 < nfifos) {
+            printf("{\"status\":{\"code\":-1, \"msg\":\"FIFO threshold must be between 1 and 4\"}}\n");
             return 1;
           }
           break;
@@ -337,7 +337,7 @@ int main(int argc, FAR char *argv[]) {
     }
     else if (pid == 0) {
       // Child process (daemon)
-      printf("{\"cmd\":\"imusensor\", \"type\":\"res\", \"status\":{\"code\":0, \"msg\":\"\"}}\n");
+
       // Close standard input/output
       close(STDIN_FILENO);
       // Don't close STDOUT/STDERR to allow error reporting
@@ -406,7 +406,7 @@ int main(int argc, FAR char *argv[]) {
                "{\"samplerate\":%d,\"accel_range\":%d,\"gyro_range\":%d,\"fifo\":%d}",
                samplerate, adrange, gdrange, nfifos);
 
-      printf("{\"data\":\"%s\", \"status\":{\"code\":0, \"msg\":\"Sensor data read successfully\", \"config\":%s}\n",
+      printf("{\"data\":\"%s\", \"status\":{\"code\":0, \"msg\":\"Sensor data read successfully\"}, \"config\":%s}\n",
              data_json, config_json);
     }
     ioctl(fd, SNIOC_ENABLE, 0);
