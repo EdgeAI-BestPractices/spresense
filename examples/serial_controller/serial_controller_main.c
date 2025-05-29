@@ -88,8 +88,6 @@ void *spresense_worker_thread(void *arg) {
   spresense_task_queue_t *queue = args->queue;
   int serial_fd = args->serial_fd;
 
-  printf("spresense_worker_thread: started\n");
-
   while (g_is_running) {
     json_message_t *msg = spresense_task_queue_pop(queue);
     if (msg == NULL) {
@@ -105,13 +103,34 @@ void *spresense_worker_thread(void *arg) {
       free_json_message(msg);
       continue;
     }
-    printf("spresense_worker_thread: executing command: %s\n", msg->cmd);
 
     struct timespec start_time, end_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     char *output = NULL;
-    int status = execute_command(msg->cmd, &output);
+    int status = 0;
+
+    if (strcmp(msg->type, "poll") == 0) {
+      char modified_cmd[MAX_CMD_LENGTH];
+      if (msg->interval > 0) {
+        if (msg->id > 0) {
+          snprintf(modified_cmd, sizeof(modified_cmd), "%s -i %u -t %u",
+                   msg->cmd, msg->id, msg->interval);
+        } else {
+          snprintf(modified_cmd, sizeof(modified_cmd), "%s -t %u",
+                   msg->cmd, msg->interval);
+        }
+      } else if (msg->id > 0) {
+        snprintf(modified_cmd, sizeof(modified_cmd), "%s -i %u",
+                 msg->cmd, msg->id);
+      } else {
+        strncpy(modified_cmd, msg->cmd, sizeof(modified_cmd) - 1);
+        modified_cmd[sizeof(modified_cmd) - 1] = '\0';
+      }
+      status = execute_command(modified_cmd, &output);
+    } else {
+      status = execute_command(msg->cmd, &output);
+    }
 
     if (output == NULL) {
       printf("spresense_worker_thread: Failed to allocate memory for output\n");
@@ -123,8 +142,6 @@ void *spresense_worker_thread(void *arg) {
     long runtime_ms = (end_time.tv_sec - start_time.tv_sec) * 1000 +
       (end_time.tv_nsec - start_time.tv_nsec) / 1000000;
 
-    printf("spresense_worker_thread: Command executed with status %d in %ld ms\n", status, runtime_ms);
-
     json_message_t *response = copy_json_message(msg);
     if (response != NULL) {
       // type: req->res
@@ -132,7 +149,7 @@ void *spresense_worker_thread(void *arg) {
         strncpy(response->type, "res", sizeof(response->type) - 1);
         response->type[sizeof(response->type) - 1] = '\0';
       }
-
+      printf("spresense_worker_thread: output is %s\n", output);
       // output->status, data, config
       cJSON *output_json = NULL;
       if (output[0] != '\0') {
@@ -158,11 +175,11 @@ void *spresense_worker_thread(void *arg) {
           }
         } else {
           // status is None, use return value of pclose()
-          response->status.code = 0;
+          response->status.code = status;
           if (response->status.msg != NULL) {
             free(response->status.msg);
           }
-          response->status.msg = strdup("OK");
+          response->status.msg = strdup("");
         }
 
         // update data
@@ -177,8 +194,6 @@ void *spresense_worker_thread(void *arg) {
           if (response->data != NULL) {
             cJSON_Delete(response->data);
           }
-          response->data = cJSON_CreateObject();
-          cJSON_AddStringToObject(response->data, "output", output);
         }
 
         // update config
@@ -257,7 +272,6 @@ int execute_command(const char *cmd, char **output) {
   }
 
   *output = NULL;
-  printf("execute_command: initialize output buffer\n");
 
   while (fgets(buffer, sizeof(buffer), fp) != NULL) {
     size_t len = strlen(buffer);
@@ -265,7 +279,6 @@ int execute_command(const char *cmd, char **output) {
     // spread buffer size
     if (total_size + len + 1 > buffer_size) {
       buffer_size = total_size + len + 128;
-      printf("execute_command: spread buffer size: %zu bytes\n", buffer_size);
       char *new_output = realloc(*output, buffer_size);
       if (new_output == NULL) {
         free(*output);
@@ -280,10 +293,8 @@ int execute_command(const char *cmd, char **output) {
     total_size += len;
     (*output)[total_size] = '\0';
   }
-  printf("execute_command: output is %zu bytes\n", total_size);
 
   int status = pclose(fp);
-  printf("execute_command: pclose status: %d\n", status);
 
   // output is None
   if (*output == NULL) {
@@ -295,7 +306,7 @@ int execute_command(const char *cmd, char **output) {
 
     char no_output_json[256];
     snprintf(no_output_json, sizeof(no_output_json),
-             "{\"status\":{\"code\":-1, \"msg\":\"%s output not found\"}}", cmd);
+             "{\"status\":{\"code\":%d, \"msg\":\"output is none\"}}", status);
     *output = strdup(no_output_json);
   }
 
@@ -306,7 +317,6 @@ void process_json(const char *json_str, int serial_fd, spresense_task_queue_t *q
   printf("Processing JSON: %s\n", json_str);
   json_message_t *request = parse_json_message(json_str);
   if (request == NULL) {
-    printf("process_json: Invalid JSON format\n");
 
     json_message_t *error_response = create_json_message();
     if (error_response != NULL) {
@@ -330,7 +340,6 @@ void process_json(const char *json_str, int serial_fd, spresense_task_queue_t *q
 
   // JSON must have cmd key
   if (request->cmd == NULL || strlen(request->cmd) == 0) {
-    printf("process_json: No command specified in JSON\n");
 
     json_message_t *error_response = create_json_message();
     if (error_response != NULL) {
@@ -354,12 +363,10 @@ void process_json(const char *json_str, int serial_fd, spresense_task_queue_t *q
 
   // add queue
   if (spresense_task_queue_add(queue, request) != 0) {
-    printf("process_json: Failed to add task queue\n");
     free_json_message(request);
     return;
   }
 
-  printf("process_json: Command '%s' added to queue\n", request->cmd);
 }
 
 json_message_t *parse_json_message(const char *json_str) {
@@ -613,9 +620,6 @@ int spresense_task_queue_add(spresense_task_queue_t *queue, json_message_t *msg)
   queue->tail = (queue->tail + 1) % queue->capacity;
   queue->size++;
 
-  printf("spresense_task_queue_add: Task added to queue (size: %d/%d)\n",
-         queue->size, queue->capacity);
-
   pthread_cond_signal(&queue->not_empty);
 
   pthread_mutex_unlock(&queue->mutex);
@@ -641,7 +645,6 @@ void spresense_task_queue_free(spresense_task_queue_t *queue) {
 
   free(queue->items);
   free(queue);
-  printf("spresense_task_queue_free: Task queue destroyed\n");
 }
 
 json_message_t *spresense_task_queue_pop(spresense_task_queue_t *queue) {
@@ -649,7 +652,6 @@ json_message_t *spresense_task_queue_pop(spresense_task_queue_t *queue) {
     return NULL;
   }
 
-  printf("spresense_task_queue_pop: start (size: %d/%d)\n", queue->size, queue->capacity);
   pthread_mutex_lock(&queue->mutex);
 
   while (queue->size == 0 && g_is_running) {
@@ -740,8 +742,6 @@ int main(int argc, FAR char *argv[])
     return -1;
   }
 
-  printf("main: Serial controller started. Maximum safe packet size: %d bytes\n", MAX_SAFE_PACKET);
-
   while (g_is_running) {
     bytes_read = read(serial_fd, receive, BUFFER_SIZE - 1);
     if (bytes_read < 0) {
@@ -754,7 +754,6 @@ int main(int argc, FAR char *argv[])
     } else if (bytes_read > 0) {
 
       receive[bytes_read] = '\0';
-      printf("main: Data %s (%d bytes)\n", receive, bytes_read);
 
       char *line_start = receive;
       char *line_end;
@@ -770,7 +769,6 @@ int main(int argc, FAR char *argv[])
 
       if (*line_start != '\0') {
         printf("main: cannot find delimiter %s\n", line_start);
-        // 必要に応じて次回のために保存
       }
       usleep(10000);
     } else {
