@@ -2,7 +2,7 @@
 config EXAMPLES_IMUSENSOR
 	tristate "Obtain linear and gyro acceleration from IMU Board"
 	default n
-    depends on SENSORS_CXD5602PWBIMU
+	depends on SENSORS_CXD5602PWBIMU
 	---help---
 		Enable the imusensor app
 

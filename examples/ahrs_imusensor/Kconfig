@@ -1,0 +1,26 @@
+
+config EXAMPLES_AHRS_IMUSENSOR
+	tristate "Calculate attitude (roll, pitch, yaw) using IMU sensor fusion"
+	default n
+	depends on SENSORS_CXD5602PWBIMU
+	---help---
+		Enable the ahrs_imusensor app
+
+if EXAMPLES_AHRS_IMUSENSOR
+
+config EXAMPLES_AHRS_IMUSENSOR_PROGNAME
+	string "Program name"
+	default "ahrs_imusensor"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_AHRS_IMUSENSOR_PRIORITY
+	int "ahrs_imusensor task priority"
+	default 100
+
+config EXAMPLES_AHRS_IMUSENSOR_STACKSIZE
+	int "ahrs_imusensor stack size"
+	default 2048
+
+endif

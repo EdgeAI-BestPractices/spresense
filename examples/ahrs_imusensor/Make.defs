@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_AHRS_IMUSENSOR),)
+CONFIGURED_APPS += ahrs_imusensor
+endif
