@@ -1,1 +1,3 @@
 sercon
+sleep 1
+serial_controller &
