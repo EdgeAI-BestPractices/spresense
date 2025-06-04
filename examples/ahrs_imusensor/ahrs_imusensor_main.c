@@ -131,6 +131,21 @@ static int is_daemon_running(void) {
   return 0;  // Process does not exist
 }
 
+static int drop_50msdata(int fd, int samprate, cxd5602pwbimu_data_t *imu)
+{
+  int cnt = samprate / 20; /* data size of 50ms */
+
+  if (cnt == 0) cnt = 1;
+
+  while (cnt)
+    {
+      read(fd, imu, sizeof(imu[0]));
+      cnt--;
+    }
+
+  return 0;
+}
+
 static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, int interval_ms, int request_id, float beta) {
   int fd_sensor, fd_tty;
   struct pollfd fds[1];
@@ -140,6 +155,8 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
   char config_json[128];
   struct ahrs_out_s ahrs;
   float euler[3] = {0.0f, 0.0f, 0.0f};
+  unsigned long last_output_time = 0;
+  struct timespec current_time;
 
   // Initialize AHRS
   INIT_AHRS(&ahrs, beta, (float)samplerate);
@@ -171,6 +188,8 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
     ret = read(fd_sensor, &dummy_data, sizeof(dummy_data));
   }
 
+  drop_50msdata(fd_sensor, samplerate, &data);
+
   // Open TTY device for output
   fd_tty = open(TTY_OUTPUT_PATH, O_WRONLY);
   if (fd_tty < 0) {
@@ -192,37 +211,47 @@ static void run_poll_mode(int samplerate, int adrange, int gdrange, int nfifos, 
          request_id);
   write(fd_tty, init_msg, strlen(init_msg));
 
+  clock_gettime(CLOCK_MONOTONIC, &current_time);
+  last_output_time = current_time.tv_sec * 1000 + current_time.tv_nsec / 1000000;
+
   while (g_ahrs_running) {
     fds[0].fd = fd_sensor;
     fds[0].events = POLLIN;
 
-    ret = poll(fds, 1, 100);  // Short timeout
+    ret = poll(fds, 1, 20);  // Short timeout
     if (ret > 0 && (fds[0].revents & POLLIN)) {
       ret = read(fd_sensor, &data, sizeof(data));
       if (ret == sizeof(data)) {
         // Update AHRS
         MadgwickAHRSupdateIMU(&ahrs, data.gx, data.gy, data.gz, data.ax, data.ay, data.az);
 
-        // Convert quaternion to Euler angles
-        quaternion2euler(ahrs.q, euler);
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        unsigned long current_ms = current_time.tv_sec * 1000 + current_time.tv_nsec / 1000000;
 
-        // Create data JSON
-        snprintf(data_json, sizeof(data_json),
-                 "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f,\"qw\":%.4f,\"qx\":%.4f,\"qy\":%.4f,\"qz\":%.4f}",
-                 euler[0], euler[1], euler[2], ahrs.q[0], ahrs.q[1], ahrs.q[2], ahrs.q[3]);
+        if (current_ms - last_output_time >= interval_ms) {
+          // Convert quaternion to Euler angles
+          quaternion2euler(ahrs.q, euler);
 
-        // Create full JSON output
-        char output[1024];
-        snprintf(output, sizeof(output),
-                 "{\"cmd\":\"ahrs_imusensor\",\"type\":\"poll\",\"interval\":%d,\"id\":%d,"
-                 "\"status\":{\"code\":0,\"msg\":\"\"},\"data\":%s,\"config\":%s}\n",
-                 interval_ms, request_id, data_json, config_json);
+          // Create data JSON
+          snprintf(data_json, sizeof(data_json),
+                   "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f,\"qw\":%.4f,\"qx\":%.4f,\"qy\":%.4f,\"qz\":%.4f}",
+                   euler[0], euler[1], euler[2], ahrs.q[0], ahrs.q[1], ahrs.q[2], ahrs.q[3]);
 
-        // Write directly to ttyACM0
-        write(fd_tty, output, strlen(output));
+          // Create full JSON output
+          char output[1024];
+          snprintf(output, sizeof(output),
+                   "{\"cmd\":\"ahrs_imusensor\",\"type\":\"poll\",\"interval\":%d,\"id\":%d,"
+                   "\"status\":{\"code\":0,\"msg\":\"\"},\"data\":%s,\"config\":%s}\n",
+                   interval_ms, request_id, data_json, config_json);
+
+          // Write directly to ttyACM0
+          write(fd_tty, output, strlen(output));
+
+          // Update last output time
+          last_output_time = current_ms;
+        }
       }
     }
-    usleep(interval_ms * 1000);
   }
   // Cleanup
   ioctl(fd_sensor, SNIOC_ENABLE, 0);
@@ -404,6 +433,8 @@ int main(int argc, FAR char *argv[]) {
     // Read data
     fds[0].fd = fd;
     fds[0].events = POLLIN;
+
+    drop_50msdata(fd, samplerate, &data);
 
     ret = poll(fds, 1, 1000);
     if (ret <= 0) {
