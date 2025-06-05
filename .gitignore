@@ -2,3 +2,4 @@
 firmware/*/*.spk
 firmware/*/*.espk
 firmware/*/stored_version.json
+sdk/include/spresense_version.h

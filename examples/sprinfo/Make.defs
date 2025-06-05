@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_SPRINFO),)
+CONFIGURED_APPS += sprinfo
+endif
