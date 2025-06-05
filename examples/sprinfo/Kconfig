@@ -1,0 +1,25 @@
+
+config EXAMPLES_SPRINFO
+	tristate "Get spresense version"
+	default y
+	---help---
+		Enable the sprinfo app
+
+if EXAMPLES_SPRINFO
+
+config EXAMPLES_SPRINFO_PROGNAME
+	string "Program name"
+	default "sprinfo"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_SPRINFO_PRIORITY
+	int "sprinfo task priority"
+	default 100
+
+config EXAMPLES_SPRINFO_STACKSIZE
+	int "sprinfo stack size"
+	default 1024
+
+endif
