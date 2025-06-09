@@ -6,7 +6,7 @@
 Clone this repository and update submodules.
 
 ```
-$ git clone --recursive git@//github.com:EdgeAI-BestPractices/spresense.git
+$ git clone --recursive git@github.com:EdgeAI-BestPractices/spresense.git
 ```
 
 # Update bootloader

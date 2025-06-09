@@ -63,3 +63,13 @@ When an unknown option is specified:
 
 - Version information is automatically generated at build time
 - For accurate version information, build from the latest source code
+
+## Focus update
+
+spresense_version.h is created only once initially, but it does not update automatically.
+To force an update, please delete it first:
+
+```sh
+cd sdk/include
+rm spresense_version.h
+```
