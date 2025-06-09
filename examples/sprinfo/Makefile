@@ -16,9 +16,8 @@ VERSION_HEADER := $(TOPDIR)/../sdk/include/spresense_version.h
 .PHONY: generate_version_header
 generate_version_header:
 	@echo "Generating $(VERSION_HEADER) from $(VERSION_JSON)"
-	@python $(CURDIR)/generate_version.py $(VERSION_JSON) $(VERSION_HEADER)
+	@python3 $(CURDIR)/generate_version.py $(VERSION_JSON) $(VERSION_HEADER)
 
-$(OBJS): generate_version_header
-all:: generate_version_header
+$(MAINSRC): generate_version_header
 
 include $(APPDIR)/Application.mk
