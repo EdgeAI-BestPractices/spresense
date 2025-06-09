@@ -13,11 +13,12 @@ MAINSRC = sprinfo_main.c
 VERSION_JSON := $(TOPDIR)/../firmware/spresense/version.json
 VERSION_HEADER := $(TOPDIR)/../sdk/include/spresense_version.h
 
-.PHONY: generate_version_header
-generate_version_header:
-	@echo "Generating $(VERSION_HEADER) from $(VERSION_JSON)"
-	@python3 $(CURDIR)/generate_version.py $(VERSION_JSON) $(VERSION_HEADER)
+ifeq ($(CONFIG_EXAMPLES_SPRINFO),y)
+$(VERSION_HEADER): $(VERSION_JSON)
+	@echo "Generating $@ from $<"
+	@python3 $(CURDIR)/generate_version.py $< $@
 
-$(MAINSRC): generate_version_header
+$(MAINSRC): $(VERSION_HEADER)
+endif
 
 include $(APPDIR)/Application.mk
