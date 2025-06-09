@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_SPITEST),)
+CONFIGURED_APPS += spitest
+endif
