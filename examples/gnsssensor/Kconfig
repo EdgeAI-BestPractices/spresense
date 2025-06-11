@@ -1,0 +1,26 @@
+
+config EXAMPLES_GNSSSENSOR
+	tristate "Enable gnsssensor command that returns gnss data"
+	default y
+    depends on CXD56_GNSS || CXD56_GNSS_ADDON
+	---help---
+		Enable the gnsssensor app
+
+if EXAMPLES_GNSSSENSOR
+
+config EXAMPLES_GNSSSENSOR_PROGNAME
+	string "Program name"
+	default "gnsssensor"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_GNSSSENSOR_PRIORITY
+	int "gnsssensor task priority"
+	default 100
+
+config EXAMPLES_GNSSSENSOR_STACKSIZE
+	int "gnsssensor stack size"
+	default 2048
+
+endif
