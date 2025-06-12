@@ -1,0 +1,3 @@
+ifneq ($(CONFIG_IMU_UTILS),)
+CONFIGURED_APPS += imu_utils
+endif

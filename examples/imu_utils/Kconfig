@@ -1,0 +1,6 @@
+config IMU_UTILS
+	bool "Utitiy functions for IMU sensor"
+	default n
+	depends on SENSORS_CXD5602PWBIMU
+	---help---
+		Enables the utility library.
