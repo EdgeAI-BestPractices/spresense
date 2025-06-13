@@ -1,0 +1,15 @@
+
+include $(APPDIR)/Make.defs
+include $(SDKDIR)/Make.defs
+
+PROGNAME = $(CONFIG_EXAMPLES_GYROCOMPASS_IMUSENSOR_PROGNAME)
+PRIORITY = $(CONFIG_EXAMPLES_GYROCOMPASS_IMUSENSOR_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_GYROCOMPASS_IMUSENSOR_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_GYROCOMPASS_IMUSENSOR)
+
+ASRCS =
+CSRCS = $(PWD)/gyrocompass_pwbimu/gyrocompass.c # Reuse algorithm from gyrocompass_pwbimu
+CFLAGS += $(INCDIR_PREFIX)$(PWD)/include
+MAINSRC = gyrocompass_imusensor_main.c
+
+include $(APPDIR)/Application.mk
