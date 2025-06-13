@@ -1,0 +1,4 @@
+
+ifneq ($(CONFIG_EXAMPLES_GYROCOMPASS_IMUSENSOR),)
+CONFIGURED_APPS += gyrocompass_imusensor
+endif

@@ -1,0 +1,27 @@
+
+config EXAMPLES_GYROCOMPASS_IMUSENSOR
+	tristate "Obtain gyrocompass data from IMU Board"
+	default n
+	depends on SENSORS_CXD5602PWBIMU
+	depends on IMU_UTILS
+	---help---
+		Enable the gyrocompass imusensor app
+
+if EXAMPLES_GYROCOMPASS_IMUSENSOR
+
+config EXAMPLES_GYROCOMPASS_IMUSENSOR_PROGNAME
+	string "Program name"
+	default "gyrocompass_imusensor"
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_GYROCOMPASS_IMUSENSOR_PRIORITY
+	int "gyrocompass_imusensor task priority"
+	default 100
+
+config EXAMPLES_GYROCOMPASS_IMUSENSOR_STACKSIZE
+	int "gyrocompass_imusensor stack size"
+	default 4096
+
+endif
