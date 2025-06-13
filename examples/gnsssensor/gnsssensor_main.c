@@ -131,7 +131,7 @@ static int read_and_print_json(int fd, int request_id, int count)
 {
   int ret;
   struct cxd56_gnss_dms_s dmf_lat, dmf_lng;
-  char output[512];
+  static char output[1024];
 
   /* Read POS data. */
   ret = read(fd, &posdat, sizeof(posdat));
@@ -173,23 +173,37 @@ static int read_and_print_json(int fd, int request_id, int count)
       snprintf(lng_str, sizeof(lng_str), "%d.%d.%04ld",
                dmf_lng.degree, dmf_lng.minute, dmf_lng.frac);
 
-      /* Add position data to JSON */
-      char pos_data[256];
+      char pos_data[768];
       snprintf(pos_data, sizeof(pos_data),
                ",\"lat\":\"%s\",\"lng\":\"%s\",\"lat_raw\":%.8f,\"lng_raw\":%.8f,"
-               "\"fix\":%d,\"altitude\":%.2f},\"status\":{\"code\":0,\"msg\":\"Position fixed\"}}",
+               "\"fix\":%d,\"altitude\":%.2f,\"geoid\":%.2f,"
+               "\"h_accuracy\":%.2f,\"v_accuracy\":%.2f,"
+               "\"visible_sats\":%d,\"tracking_sats\":%d,\"pos_sats\":%d,"
+               "\"sat_systems\":%d,"
+               "\"pdop\":%.2f,\"hdop\":%.2f,\"vdop\":%.2f,\"tdop\":%.2f},\"status\":{\"code\":0,\"msg\":\"Position fixed\"}}",
                lat_str, lng_str,
                posdat.receiver.latitude, posdat.receiver.longitude,
                posdat.receiver.pos_fixmode,
-               posdat.receiver.altitude);
+               posdat.receiver.altitude, posdat.receiver.geoid,
+               posdat.receiver.pos_accuracy.hvar, posdat.receiver.pos_accuracy.vvar,
+               posdat.receiver.numsv, posdat.receiver.numsv_tracking, posdat.receiver.numsv_calcpos,
+               posdat.receiver.svtype,
+               posdat.receiver.pos_dop.pdop, posdat.receiver.pos_dop.hdop,
+               posdat.receiver.pos_dop.vdop, posdat.receiver.pos_dop.tdop);
 
       strncat(output, pos_data, sizeof(output) - strlen(output) - 1);
     }
   else
     {
       /* No position fix */
-      strncat(output, ",\"fix\":0},\"status\":{\"code\":0,\"msg\":\"No position fix\"}}",
-              sizeof(output) - strlen(output) - 1);
+      char no_fix_data[256];
+      snprintf(no_fix_data, sizeof(no_fix_data),
+               ",\"fix\":0,\"visible_sats\":%d,\"tracking_sats\":%d,"
+               "\"sat_systems\":%d},\"status\":{\"code\":0,\"msg\":\"No position fix\"}}",
+               posdat.receiver.numsv, posdat.receiver.numsv_tracking,
+               posdat.receiver.svtype);
+
+      strncat(output, no_fix_data, sizeof(output) - strlen(output) - 1);
     }
 
   /* Print the JSON output */
@@ -209,6 +223,7 @@ static int read_and_print(int fd, int fd_tty, int request_id, int interval_ms)
 {
   int ret;
   struct cxd56_gnss_dms_s dmf;
+  static char output[1024];
 
   /* Read POS data. */
   ret = read(fd, &posdat, sizeof(posdat));
@@ -226,7 +241,6 @@ static int read_and_print(int fd, int fd_tty, int request_id, int interval_ms)
   /* If fd_tty is valid, also output JSON format to TTY */
   if (fd_tty >= 0)
     {
-      char output[512];
       snprintf(output, sizeof(output),
                "{\"cmd\":\"gnss\",\"type\":\"poll\",\"interval\":%d,\"id\":%d,"
                "\"data\":{\"time\":\"%d:%d:%d.%ld\"",
@@ -248,20 +262,37 @@ static int read_and_print(int fd, int fd_tty, int request_id, int interval_ms)
                    dmf.degree, dmf.minute, dmf.frac);
 
           /* Append position data to output */
-          char pos_data[256];
+          char pos_data[768];
           snprintf(pos_data, sizeof(pos_data),
-                   ",\"lat\":\"%s\",\"lng\":\"%s\",\"fix\":%d,\"altitude\":%.2f},\"status\":{\"code\":0,\"msg\":\"Position fixed\"}}\n",
+                   ",\"lat\":\"%s\",\"lng\":\"%s\",\"lat_raw\":%.8f,\"lng_raw\":%.8f,"
+                   "\"fix\":%d,\"altitude\":%.2f,\"geoid\":%.2f,"
+                   "\"h_accuracy\":%.2f,\"v_accuracy\":%.2f,"
+                   "\"visible_sats\":%d,\"tracking_sats\":%d,\"pos_sats\":%d,"
+                   "\"sat_systems\":%d,"
+                   "\"pdop\":%.2f,\"hdop\":%.2f,\"vdop\":%.2f,\"tdop\":%.2f},\"status\":{\"code\":0,\"msg\":\"Position fixed\"}}",
                    lat_str, lng_str,
+                   posdat.receiver.latitude, posdat.receiver.longitude,
                    posdat.receiver.pos_fixmode,
-                   posdat.receiver.altitude);
+                   posdat.receiver.altitude, posdat.receiver.geoid,
+                   posdat.receiver.pos_accuracy.hvar, posdat.receiver.pos_accuracy.vvar,
+                   posdat.receiver.numsv, posdat.receiver.numsv_tracking, posdat.receiver.numsv_calcpos,
+                   posdat.receiver.svtype,
+                   posdat.receiver.pos_dop.pdop, posdat.receiver.pos_dop.hdop,
+                   posdat.receiver.pos_dop.vdop, posdat.receiver.pos_dop.tdop);
 
           strncat(output, pos_data, sizeof(output) - strlen(output) - 1);
         }
       else
         {
           /* No position fix */
-          strncat(output, ",\"fix\":0},\"status\":{\"code\":0,\"msg\":\"No position fix\"}}\n",
-                  sizeof(output) - strlen(output) - 1);
+          char no_fix_data[128];
+          snprintf(no_fix_data, sizeof(no_fix_data),
+                   ",\"fix\":0,\"visible_sats\":%d,\"tracking_sats\":%d},"
+                   "\"status\":{\"code\":0,\"msg\":\"No position fix\"}}\n",
+                   posdat.receiver.numsv,
+                   posdat.receiver.numsv_tracking);
+
+          strncat(output, no_fix_data, sizeof(output) - strlen(output) - 1);
         }
 
       write(fd_tty, output, strlen(output));
